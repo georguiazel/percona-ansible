@@ -1,0 +1,8 @@
+---
+- name: Configure Server Percona
+  hosts: server_percona
+  become: yes
+  vars_files:
+    - ../host_vars/server_percona.yml
+  roles:
+    - server_percona

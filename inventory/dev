@@ -1,0 +1,2 @@
+[server_percona]
+<IP_SERVER> ansible_user=test_ansible

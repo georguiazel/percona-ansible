@@ -1,0 +1,92 @@
+- name: Install Podman in the server
+  apt:
+    name: podman
+    state: present
+  become: yes
+
+- name: Ensure podman is installed
+  package:
+    name: podman
+    state: present
+
+- name: Ensure systemd user directory exists
+  file:
+    path: "{{ ansible_env.HOME }}/.config/systemd/user/"
+    state: directory
+
+- name: Create pmm-server.service file
+  copy:
+    dest: "{{ ansible_env.HOME }}/.config/systemd/user/pmm-server.service"
+    content: |
+      [Unit]
+      Description=pmm-server
+      Wants=network-online.target
+      After=network-online.target
+      After=nss-user-lookup.target nss-lookup.target
+      After=time-sync.target
+
+      [Service]
+      Type=simple
+
+      # set environment for this unit
+      Environment=PMM_PUBLIC_PORT={{ PMM_PUBLIC_PORT }}
+      Environment=PMM_VOLUME_NAME=%N
+      Environment=PMM_TAG=2.33.0
+      Environment=PMM_IMAGE=docker.io/percona/pmm-server
+      Environment=PMM_ENV_FILE=%h/.config/pmm-server/pmm-server.env
+
+      # optional env file that could override previous env settings for this unit
+      EnvironmentFile=-%h/.config/pmm-server/env
+
+      ExecStart=/usr/bin/podman run --rm --replace=true --name=%N -p ${PMM_PUBLIC_PORT}:443/tcp --ulimit=host --volume=${PMM_VOLUME_NAME}:/srv --env-file=${PMM_ENV_FILE} --health-cmd=none --health-interval=disable ${PMM_IMAGE}:${PMM_TAG}
+      ExecStop=/usr/bin/podman stop -t 10 %N
+      Restart=on-failure
+      RestartSec=20
+
+      [Install]
+      WantedBy=default.target
+
+- name: Ensure pmm-server environment directory exists
+  file:
+    path: "{{ ansible_env.HOME }}/.config/pmm-server/"
+    state: directory
+
+- name: Create pmm-server.env file
+  copy:
+    dest: "{{ ansible_env.HOME }}/.config/pmm-server/pmm-server.env"
+    content: |
+      # env file passed to the container
+      # full list of environment variables:
+      # https://www.percona.com/doc/percona-monitoring-and-management/2.x/setting-up/server/docker.html#environment-variables
+
+      # keep updates disabled
+      # do image replacement instead (update the tag and restart the service)
+      DISABLE_UPDATES=1
+
+      # Enable DBaaS feature
+      #ENABLE_DBAAS=1
+
+- name: Create env file for customization
+  copy:
+    dest: "{{ ansible_env.HOME }}/.config/pmm-server/env"
+    content: |
+      PMM_TAG=2.33.0
+      PMM_IMAGE=docker.io/percona/pmm-server
+      PMM_PUBLIC_PORT=8443
+
+- name: Move pmm-server.service to /etc/systemd/system
+  command: mv {{ ansible_env.HOME }}/.config/systemd/user/pmm-server.service /etc/systemd/system/
+  become: yes
+  when: ansible_env.HOME is defined
+
+- name: Reload systemd manager configuration
+  command: systemctl daemon-reload
+  become: yes
+
+- name: Enable pmm-server service
+  command: systemctl enable pmm-server
+  become: yes
+
+- name: Start pmm-server service
+  command: systemctl start pmm-server
+  become: yes
