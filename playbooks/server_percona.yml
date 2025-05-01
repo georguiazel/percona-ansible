@@ -3,6 +3,6 @@
   hosts: server_percona
   become: yes
   vars_files:
-    - ../host_vars/server_percona.yml
+    - ../host_vars/secret.yaml
   roles:
     - server_percona

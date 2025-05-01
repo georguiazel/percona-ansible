@@ -1,2 +1,3 @@
 [server_percona]
-<IP_SERVER> ansible_user=test_ansible
+# <IP_SERVER> ansible_user=test_ansible
+localhost ansible_connection=local

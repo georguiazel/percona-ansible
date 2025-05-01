@@ -66,7 +66,7 @@ Before running the playbook, make sure to set up the following environment varia
 
 If you want to set your own credentials in a different file, follow these steps..Create  un vault file in `host_vars/<file_name.yml>`, You will be asked to enter a password for the file.
 ```bash
-ansible-vault create ./host_vars/<file_name.yml>
+ansible-vault create ./host_vars/server_percona.yml
 ```
 
 ```bash
@@ -102,7 +102,7 @@ Specify the `inventory , remote_user, roles_path, private_key_file` paths.
 inventory = ./inventory/dev
 remote_user = test_ansible
 roles_path = ./roles
-private_key_file = ~/.ssh/server_percona
+# private_key_file = ~/.ssh/server_percona
 host_key_checking = False
 retry_files_enabled = False
 timeout = 30

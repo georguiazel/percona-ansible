@@ -1,13 +1,32 @@
-- name: Install Podman in the server
+- name: Check if podman is already installed
+  command: podman --version
+  register: podman_check
+  ignore_errors: yes
+
+- name: Add Podman repository (Ubuntu 20.04 only)
+  shell: |
+    echo "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /" > /etc/apt/sources.list.d/podman.list
+    curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key | gpg --dearmor -o /etc/apt/trusted.gpg.d/libcontainers.gpg
+  args:
+    executable: /bin/bash
+  when: podman_check.rc != 0
+  become: yes
+
+- name: Install required packages
+  apt:
+    name: [curl, gnupg2, software-properties-common]
+    state: present
+    update_cache: yes
+  when: podman_check.rc != 0
+  become: yes
+
+- name: Install Podman
   apt:
     name: podman
     state: present
+    update_cache: yes
+  when: podman_check.rc != 0
   become: yes
-
-- name: Ensure podman is installed
-  package:
-    name: podman
-    state: present
 
 - name: Ensure systemd user directory exists
   file:
